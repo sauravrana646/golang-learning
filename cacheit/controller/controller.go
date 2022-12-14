@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sauravrana646/cacheit/helper"
 	"github.com/sauravrana646/cacheit/model"
-	// "github.com/sauravrana646/cacheit/model"
 )
 
 const jsonfile string = "new.json"
@@ -39,16 +38,16 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	// fmt.Println("Data stored in the Threads is \n", threads)
 }
 
-// func GetRaw() {
-// 	var threads []model.Thread
+func GetRaw() {
+	var threads []model.Thread
 
-// 	byteData, err := ioutil.ReadFile("saves.json")
-// 	helper.ErrNotNil(err)
+	byteData, err := ioutil.ReadFile("saves.json")
+	helper.ErrNotNil(err)
 
-// 	json.Unmarshal(byteData, &threads)
+	json.Unmarshal(byteData, &threads)
 
-// 	fmt.Println(threads)
-// }
+	fmt.Println(threads)
+}
 
 func GetOne(w http.ResponseWriter, r *http.Request) {
 	w = setBasicHeaders(w, "application/json")
@@ -83,21 +82,39 @@ func GetOne(w http.ResponseWriter, r *http.Request) {
 	// fmt.Println("Data stored in the Threads is \n", threads)
 }
 
-// func UpdateOne(w http.ResponseWriter, r *http.Request) {
-// 	w = setBasicHeaders(w, "application/json")
+func UpdateOne(w http.ResponseWriter, r *http.Request) {
+	
+	var updatedThread model.Thread
+	var isIdFound bool = false 
 
-// 	v := mux.Vars(r)
+	w = setBasicHeaders(w, "application/json")
 
-// 	var result model.Thread
+	v := mux.Vars(r)
 
-// 	query := mux.Vars(r)
+	dataByte, err := ioutil.ReadAll(r.Body)
+	helper.ErrNotNil(err)
 
-// 	// fmt.Println("Vars are ", query)
+	json.Unmarshal(dataByte, &updatedThread)
+	// fmt.Println("Vars are ", query)
 
-// 	threads := helper.JsonToStruct()
+	threads := helper.JsonToStruct(jsonfile)
 
-// 	// v := mux.Vars
-// }
+	for key , thread := range threads {
+		if thread.Id == v["id"]{
+				threads = append(threads[:key], threads[key+1:]... )
+				isIdFound = true
+				break
+		}
+	}
+	
+	if !isIdFound{
+		// w.Write([]byte(`No matching ID Found`))
+		http.Error(w, "No matching ID Found", http.StatusBadRequest)
+		return
+	}
+
+	// v := mux.Vars
+}
 
 func AddOne(w http.ResponseWriter, r *http.Request) {
 
@@ -115,7 +132,7 @@ func AddOne(w http.ResponseWriter, r *http.Request) {
 
 	for _, thread := range threads {
 		if thread.Id == newthread.Id {
-			http.Error(w, "Item with this ID already exists", http.StatusBadRequest)
+			http.Error(w, "Item with this ID already exists", http.StatusUnprocessableEntity)
 			return
 		}
 	}
