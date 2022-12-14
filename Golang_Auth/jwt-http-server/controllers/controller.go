@@ -1,5 +1,7 @@
 package controllers
 
+// http headers must be set before sending any response through http.ResponseWriter else they will not be sent.
+
 import (
 	"errors"
 	"fmt"
@@ -75,65 +77,63 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 	}
-	
-	fmt.Println("")
-	fmt.Println("Cookie:")
-	fmt.Println(cookie)
-	
+
+	// fmt.Println("")
+	// fmt.Println("Cookie:")
+	// fmt.Println(cookie)
+
 	claims, err := utils.ParseToken(cookie.Value)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 	}
-	
-	fmt.Println("")
-	fmt.Println("Claim before")
-	fmt.Println(claims)
+
+	// fmt.Println("")
+	// fmt.Println("Claim before")
+	// fmt.Println(claims)
 	// Calculate time remaining and covert in human readable form
-	tmr := time.Unix(claims.ExpiresAt,0).Sub(time.Now())
+	tmr := time.Unix(claims.ExpiresAt, 0).Sub(time.Now())
 
-	// Write time remainig
-	w.Write([]byte("Time Remaing : " +tmr.String()))
+	if tmr > 20*time.Second {
+		w.Write([]byte(`Still long time...`))
+		w.Write([]byte("Time Remaing : " + tmr.String()))
+		return
+	}
 
-
-	// if tmr > 20*time.Second {
-	// 	w.Write([]byte(`<br>Still long time...`))
-	// 	return
-	// }
-
-	newexpire := time.Now().Add(600*time.Second).Unix()
+	newexpire := time.Now().Add(60 * time.Second).Unix()
 	claims.ExpiresAt = newexpire
 
-	fmt.Println("Claim after")
-	fmt.Println("")
-	fmt.Println(claims)
+	// fmt.Println("Claim after")
+	// fmt.Println("")
+	// fmt.Println(claims)
 
 	if err != nil {
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		return
 	}
 
-	newtoken, clmExpire , err := utils.CreateToken(claims)
+	newtoken, clmExpire, err := utils.CreateToken(claims)
 	if err != nil {
 		http.Error(w, "Refresh Failed", http.StatusUnauthorized)
 	}
 
-	
 	newcookie := &http.Cookie{
 		Name:    "jwttoken",
 		Value:   newtoken,
 		Expires: time.Unix(clmExpire, 0),
 	}
 
-	fmt.Println("")
-	fmt.Println("New Cookie")
-	fmt.Println(newcookie)
-	
+	// fmt.Println("")
+	// fmt.Println("New Cookie")
+	// fmt.Println(newcookie)
+
 	// w.Header().Add("Set-Cookie", newcookie.String())
 	http.SetCookie(w, newcookie)
 
-	fmt.Println("")
-	fmt.Println("Header")
-	fmt.Println(w.Header())
+	// fmt.Println("")
+	// fmt.Println("Header")
+	// fmt.Println(w.Header())
+
+	w.Write([]byte("Time Remaing : " + tmr.String()))
 	return
 }
 
